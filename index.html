@@ -430,7 +430,7 @@ create policy "own rows" on vanitha_readings
 // ─── Config ─────────────────────────────────────────────────────
 const CFG_KEY = 'ht_supabase_cfg';
 const CONTEXT_TAGS = ['Pre-meal','Post-prandial','Fasting','Post-exercise','Bedtime','Morning','Afternoon','Evening'];
-let supabase, currentUser;
+let db, currentUser;
 let johnData = [], vanithaData = [];
 let chartRange = 7;
 const charts = {};
@@ -474,7 +474,7 @@ function saveSetup() {
 
 function initSupabase(url, key) {
   try {
-    supabase = window.supabase.createClient(url, key);
+    db = window.supabase.createClient(url, key);
   } catch(e) {
     const err = document.getElementById('setup-err');
     err.textContent = 'Failed to initialise Supabase: ' + e.message;
@@ -508,9 +508,9 @@ async function authSubmit() {
   btn.textContent = '…'; btn.disabled = true;
   let result;
   if (authMode === 'signin') {
-    result = await supabase.auth.signInWithPassword({ email, password: pw });
+    result = await db.auth.signInWithPassword({ email, password: pw });
   } else {
-    result = await supabase.auth.signUp({ email, password: pw });
+    result = await db.auth.signUp({ email, password: pw });
   }
   btn.disabled = false;
   btn.textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
@@ -530,13 +530,13 @@ async function authSubmit() {
 async function forgotPassword() {
   const email = document.getElementById('auth-email').value.trim();
   if (!email) { document.getElementById('auth-err').textContent = 'Enter your email first.'; return; }
-  await supabase.auth.resetPasswordForEmail(email);
+  await db.auth.resetPasswordForEmail(email);
   document.getElementById('auth-err').style.color = '#9FE1CB';
   document.getElementById('auth-err').textContent = 'Password reset email sent!';
 }
 
 async function checkSession() {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await db.auth.getSession();
   if (data?.session?.user) {
     currentUser = data.session.user;
     showApp();
@@ -544,7 +544,7 @@ async function checkSession() {
 }
 
 async function signOut() {
-  await supabase.auth.signOut();
+  await db.auth.signOut();
   currentUser = null;
   johnData = []; vanithaData = [];
   document.getElementById('app').style.display = 'none';
@@ -601,8 +601,8 @@ async function fetchAll() {
   setSyncStatus('busy');
   try {
     const [j, v] = await Promise.all([
-      supabase.from('john_readings').select('*').order('recorded_at', { ascending: false }).limit(200),
-      supabase.from('vanitha_readings').select('*').order('recorded_at', { ascending: false }).limit(200)
+      db.from('john_readings').select('*').order('recorded_at', { ascending: false }).limit(200),
+      db.from('vanitha_readings').select('*').order('recorded_at', { ascending: false }).limit(200)
     ]);
     if (j.error) throw j.error;
     if (v.error) throw v.error;
@@ -663,7 +663,7 @@ async function logEntry(who) {
 
   setSyncStatus('busy');
   const table = isJohn ? 'john_readings' : 'vanitha_readings';
-  const { error } = await supabase.from(table).insert(row);
+  const { error } = await db.from(table).insert(row);
   btn.disabled = false;
   btn.textContent = 'Save Reading';
 
@@ -684,7 +684,7 @@ async function deleteEntry(who, id) {
   if (!confirm('Delete this entry?')) return;
   const table = who === 'john' ? 'john_readings' : 'vanitha_readings';
   setSyncStatus('busy');
-  const { error } = await supabase.from(table).delete().eq('id', id);
+  const { error } = await db.from(table).delete().eq('id', id);
   if (error) { setSyncStatus('err'); showToast('⚠ Delete failed'); return; }
   showToast('Entry deleted');
   await fetchAll();
