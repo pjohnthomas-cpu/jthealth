@@ -902,17 +902,19 @@ function exportCSV(who) {
 }
 
 // ─── Boot ────────────────────────────────────────────────────────
+const HARDCODED_URL = 'https://ofqrynlvizcsffsephgw.supabase.co';
+const HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcXJ5bmx2aXpjc2Zmc2VwaGd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzEzNTIsImV4cCI6MjA5NTcwNzM1Mn0.9JV35zHhOW8XCnpT0IUea_QjGFFyE_gXKO4YGcPq7Xo';
+
 function boot() {
-  const cfg = loadCfg();
-  if (!cfg) return; // stay on setup screen
   if (typeof window.supabase === 'undefined') {
-    // Library not ready yet — show a helpful message
     const err = document.getElementById('setup-err');
     if (err) err.textContent = '⚠ Supabase library is loading — please wait a moment then reload.';
     return;
   }
+  // Save credentials if not already stored, then always use hardcoded values
+  saveCfg(HARDCODED_URL, HARDCODED_KEY);
   document.getElementById('screen-setup').style.display = 'none';
-  initSupabase(cfg.url, cfg.key);
+  initSupabase(HARDCODED_URL, HARDCODED_KEY);
 }
 
 // Wait for DOM + scripts to be fully ready
